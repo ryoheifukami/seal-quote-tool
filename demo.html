@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>シール堂印刷 見積り作成ツール（デモ）</title>
+<style>
+:root{--navy:#22303F;--bg:#EDF0F4;--card:#fff;--line:#E5E8EC;--btn:#1F2C3A;
+--green:#B7C77E;--greenSoft:#EDF1DC;--text:#1E2A36;--muted:#6B7A88;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+font-family:-apple-system,"Segoe UI","Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+font-size:14px;line-height:1.5}
+.app{display:flex;min-height:100vh}
+.side{width:210px;background:var(--navy);color:#C7D0D9;flex-shrink:0;padding:14px 10px}
+.brand{display:flex;gap:9px;align-items:center;padding:6px 6px 14px}
+.brand img{width:40px;height:auto}
+.brand .t{font-weight:700;color:#EAEFF4;font-size:15px;line-height:1.1}
+.brand .s{color:#8FA0AE;font-size:9px;letter-spacing:.08em}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{all:unset;cursor:pointer;display:flex;gap:10px;align-items:center;
+padding:9px 10px;border-radius:8px;color:#C7D0D9;font-weight:500;font-size:13.5px}
+.nav button:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav button.active{background:rgba(183,199,126,.16);color:#EDF1DC;border-left:3px solid var(--green)}
+.main{flex:1;min-width:0}
+.top{background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;
+gap:12px;padding:11px 20px}
+.top .ttl{font-weight:700}.top .sub{color:var(--muted);font-size:12px}
+.spacer{flex:1}
+.btn{all:unset;box-sizing:border-box;cursor:pointer;background:var(--btn);color:#fff;font-weight:600;
+padding:9px 14px;border-radius:8px;font-size:13px;text-align:center}
+.btn:hover{background:#2b3b4d}
+.btn.ghost{background:#fff;color:var(--text);border:1px solid var(--line)}
+.btn.ghost:hover{background:#f3f5f8}
+.btn.block{display:block;width:100%}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.chip-user{color:#3B4552;font-weight:600;font-size:13px}
+.wrap{padding:20px;max-width:1360px}
+.tabs{display:flex;gap:20px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.tabs .tab{padding:8px 2px;color:var(--muted);font-weight:600;cursor:pointer;border-bottom:2px solid transparent}
+.tabs .tab.on{color:var(--text);border-color:#C0392B00;border-bottom:2px solid var(--btn)}
+.grid{display:grid;grid-template-columns:1.9fr 1.05fr;gap:20px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card h4{margin:0 0 12px;font-size:15px}
+.row{display:grid;gap:12px;margin-bottom:12px}
+.row.c4{grid-template-columns:repeat(4,1fr)}
+.row.c3{grid-template-columns:repeat(3,1fr)}
+.row.c2{grid-template-columns:repeat(2,1fr)}
+label.f{display:block}
+label.f .lab{font-size:12px;color:#3A4756;margin-bottom:4px}
+input,select{width:100%;background:#fff;color:var(--text);border:1px solid var(--line);
+border-radius:8px;padding:8px 10px;font-size:13.5px;font-family:inherit}
+textarea{width:100%;background:#fff;color:var(--text);border:1px solid var(--line);border-radius:8px;
+padding:8px 10px;font-size:13px;font-family:inherit;resize:vertical}
+.paste{background:#F7F9FB;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:14px}
+.paste .lab{font-weight:600;margin-bottom:6px}
+input:focus,select:focus{outline:2px solid var(--green);outline-offset:0;border-color:var(--green)}
+.num{display:flex;align-items:center;gap:0}
+.num input{border-radius:8px 0 0 8px;border-right:none}
+.num .stp{display:flex;flex-direction:column}
+.num .stp button{all:unset;cursor:pointer;width:26px;height:18px;text-align:center;
+border:1px solid var(--line);background:#f6f8fa;font-size:12px;line-height:18px}
+.num .stp button:first-child{border-radius:0 8px 0 0;border-bottom:none}
+.num .stp button:last-child{border-radius:0 0 8px 0}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{all:unset;cursor:pointer;padding:7px 14px;font-size:13px;font-weight:600;background:#fff;color:var(--muted)}
+.seg button.on{background:var(--greenSoft);color:#54632c}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{all:unset;cursor:pointer;font-size:12px;padding:6px 10px;border:1px solid var(--line);
+border-radius:999px;background:#fff;color:var(--muted)}
+.chips button.on{background:var(--greenSoft);border-color:var(--green);color:#54632c}
+.preview .kv{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0}
+.preview .kv .k{color:var(--muted);font-size:13px}
+.preview .kv .v{font-weight:600;font-variant-numeric:tabular-nums}
+.big{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.badge{display:inline-block;background:#EEF1F4;color:#6B7A88;border:1px solid var(--line);
+border-radius:999px;padding:1px 10px;font-size:11px;font-weight:600}
+.badge.prep{background:#FFF3D6;color:#8A6D1B;border-color:#F0DFB0}
+.hr{height:1px;background:var(--line);margin:10px 0}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600;font-size:12px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px}
+.kpi .lab{color:var(--muted);font-size:12px}
+.kpi .val{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;margin:2px 0}
+.kpi .d{font-size:12px;color:#2E7D32;font-weight:600}
+.bars{display:flex;align-items:flex-end;gap:14px;height:200px;padding-top:8px}
+.bars .b{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:flex-end;height:100%}
+.bars .b .bar{width:70%;background:var(--green);border-radius:6px 6px 0 0}
+.bars .b .cap{font-size:11px;color:var(--muted)}
+.bars .b .vv{font-size:11px;font-weight:700}
+.hbars{display:flex;flex-direction:column;gap:12px}
+.hbar{display:grid;grid-template-columns:96px 1fr 42px;align-items:center;gap:8px;font-size:12px}
+.hbar .track{background:#EEF1F4;border-radius:6px;height:14px;overflow:hidden}
+.hbar .fill{height:100%;background:var(--navy);border-radius:6px}
+.alerts{display:flex;flex-direction:column;gap:10px}
+.alert{padding:10px 12px;border-radius:8px;font-size:13px;border:1px solid}
+.alert.w{background:#FFF6E5;border-color:#F0DFB0;color:#8A6D1B}
+.alert.i{background:#EAF2FF;border-color:#CFE0Fb;color:#1F4E9B}
+.alert.g{background:#EAF6EC;border-color:#C9E7CE;color:#276b2e}
+.tpl{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.demoNote{background:#fff;border:1px dashed #C9CFD8;border-radius:10px;padding:8px 12px;
+font-size:12px;color:var(--muted);margin-bottom:14px}
+.page{display:none}.page.on{display:block}
+h3.pt{margin:.2rem 0 .1rem;display:flex;gap:10px;align-items:center}
+#printDoc{display:none}
+@media print{.app,.demoNote{display:none!important}#printDoc{display:block!important}body{background:#fff}@page{margin:14mm}}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <img alt="シール堂印刷" src="data:image/png;base64,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">
+      <div><div class="t">シール堂印刷</div><div class="s">SEAL-DO SINCE 1933</div></div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+  </aside>
+
+  <div class="main">
+    <div class="top">
+      <div><span class="ttl" id="topTitle">見積作成</span> <span class="sub">シール・ラベル・ステッカー見積り</span></div>
+      <div class="spacer"></div>
+      <button class="btn" onclick="newQuote()">＋ 新規作成</button>
+      <span style="font-size:18px">🔔</span>
+      <span class="chip-user">👤 深見 ▾</span>
+    </div>
+
+    <div class="wrap">
+      <div class="demoNote">🧪 これはデモ画面です。金額はリアルタイムで計算され、見積書のPDF／CSV書き出しも実際に動きます（料金・原価はすべて仮の設定です）。</div>
+
+      <!-- 見積作成 -->
+      <section id="page-見積作成" class="page on">
+        <div class="tabs"><div class="tab on">見積作成</div><div class="tab">見積履歴</div></div>
+        <div class="grid">
+          <div>
+            <div class="card">
+              <h4>品目を入力</h4>
+              <div class="paste">
+                <div class="lab">📋 問い合わせ内容を貼り付けて自動反映</div>
+                <textarea id="paste" rows="3" placeholder="例）数量：1000〜2000枚 ／ サイズ：50×30mm ／ 希望材質：透明PET ／ 色味：単色×2色 ／ 内職する"></textarea>
+                <div style="display:flex;gap:8px;align-items:center;margin-top:7px">
+                  <button class="btn" style="padding:7px 13px" onclick="doParse()">読み取って反映</button>
+                  <span class="small muted" id="parseMsg"></span>
+                </div>
+              </div>
+              <div class="row c4">
+                <label class="f"><div class="lab">品名（種類）</div><select id="product" onchange="onProduct()"></select></label>
+                <label class="f" id="wrapShape"><div class="lab">形状</div><select id="shape" onchange="recalc()"></select></label>
+                <label class="f" id="wrapW"><div class="lab" id="labW">幅 (mm)</div>
+                  <div class="num"><input id="width" type="number" value="50" oninput="recalc()"><div class="stp"><button onclick="step('width',1)">▲</button><button onclick="step('width',-1)">▼</button></div></div></label>
+                <label class="f" id="wrapH"><div class="lab" id="labH">高さ (mm)</div>
+                  <div class="num"><input id="height" type="number" value="30" oninput="recalc()"><div class="stp"><button onclick="step('height',1)">▲</button><button onclick="step('height',-1)">▼</button></div></div></label>
+                <label class="f" id="wrapTW" style="display:none"><div class="lab">テープ幅 (mm)</div><input id="tapeW" type="number" value="15" oninput="recalc()"></label>
+                <label class="f" id="wrapTL" style="display:none"><div class="lab">テープ長さ (m)</div><input id="tapeL" type="number" value="5" oninput="recalc()"></label>
+              </div>
+              <div class="row c3">
+                <label class="f"><div class="lab">希望する材質</div><select id="material" onchange="recalc()"></select></label>
+                <label class="f" id="wrapCut"><div class="lab">仕上げ形態</div><select id="cutForm" onchange="recalc()"></select></label>
+                <label class="f"><div class="lab">色味</div>
+                  <div class="seg" id="segColor"><button class="on" onclick="setColor('フルカラー')">フルカラー</button><button onclick="setColor('単色')">単色</button></div>
+                  <div id="spotWrap" style="display:none;margin-top:6px"><input id="spot" type="number" value="2" min="1" max="6" oninput="recalc()"></div>
+                </label>
+              </div>
+              <div class="row c3">
+                <label class="f"><div class="lab">加工オプション</div><div class="chips" id="finChips"></div></label>
+                <label class="f"><div class="lab">セットアップ（内職）</div>
+                  <div class="seg" id="segSetup"><button class="on" onclick="setSetup(0)">しない</button><button onclick="setSetup(1)">内職する</button></div></label>
+                <label class="f"><div class="lab">数量（枚）</div>
+                  <div class="num"><input id="qty" type="number" value="1000" step="100" oninput="recalc()"><div class="stp"><button onclick="step('qty',100)">＋</button><button onclick="step('qty',-100)">－</button></div></div></label>
+              </div>
+              <button class="btn block" onclick="addItem()">＋ この品目を明細に追加</button>
+            </div>
+
+            <div class="card" style="margin-top:16px">
+              <h4>見積書の情報</h4>
+              <div class="row c4">
+                <label class="f"><div class="lab">宛先</div><input id="cust" value="株式会社サンプル"></label>
+                <label class="f"><div class="lab">件名</div><input id="subj" value="商品ラベル印刷 御見積"></label>
+                <label class="f"><div class="lab">担当者</div><input id="staff" value="深見"></label>
+                <label class="f"><div class="lab">有効期限(日数)</div><input id="valid" type="number" value="30"></label>
+              </div>
+              <div class="row c3">
+                <label class="f"><div class="lab">値引き（社内調整）</div><select id="dtype" onchange="recalc()"><option>なし</option><option>金額（円）</option><option>割合（％）</option></select></label>
+                <label class="f"><div class="lab">値引き額／率</div><input id="dval" type="number" value="0" oninput="recalc()"></label>
+                <label class="f"><div class="lab">備考（見積書に載る）</div><input id="remarks" placeholder="色校正1回込み／送料別途 など"></label>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top:16px">
+              <h4>明細</h4>
+              <div id="itemsBox"><div class="muted small">まだ明細がありません。「＋ この品目を明細に追加」で追加できます（1品目だけなら追加せず右の「見積書を作成」でもOK）。</div></div>
+            </div>
+          </div>
+
+          <div class="preview">
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center"><h4 style="margin:0">お見積りプレビュー</h4><span class="badge">下書き</span></div>
+              <div style="height:8px"></div>
+              <div class="kv"><span class="k">数量（枚）</span><span class="v" id="pvQty">1,000</span></div>
+              <div class="kv"><span class="k">単価（税抜）</span><span class="v" id="pvUnit">¥7.80</span></div>
+              <div class="hr"></div>
+              <div class="kv"><span class="k">小計</span><span class="v" id="pvSub">¥7,800</span></div>
+              <div class="kv"><span class="k">値引き</span><span class="v" id="pvDisc">¥0</span></div>
+              <div class="kv"><span class="k">消費税(10%)</span><span class="v" id="pvTax">¥780</span></div>
+              <div style="height:6px"></div>
+              <div class="kv"><span class="k">合計金額（税込）</span></div>
+              <div class="big" id="pvTotal">¥8,580</div>
+              <div id="pvWarn"></div>
+              <div style="height:12px"></div>
+              <button class="btn block" onclick="makeQuote()">📄 見積書を作成（PDFで保存）</button>
+              <div style="height:8px"></div>
+              <button class="btn ghost block" onclick="downloadCSV()">CSVで書き出し（Excelで開ける）</button>
+              <div style="height:8px"></div>
+              <div style="position:relative">
+                <button class="btn ghost block" onclick="copyReplyText()"
+                  onmouseenter="document.getElementById('replyTip').style.display='block'"
+                  onmouseleave="document.getElementById('replyTip').style.display='none'">📋 見積回答をテキストでコピー（マウスを乗せると内容確認）</button>
+                <pre id="replyTip" style="display:none;position:absolute;bottom:calc(100% + 6px);left:0;right:0;
+                  max-height:280px;overflow:auto;margin:0;background:#fff;border:1px solid var(--line);border-radius:8px;
+                  box-shadow:0 10px 28px rgba(20,30,45,.16);padding:12px;font-size:11.5px;line-height:1.55;
+                  white-space:pre-wrap;color:#333;z-index:50;font-family:inherit"></pre>
+              </div>
+              <div class="small" style="color:#2E7D32;margin-top:6px" id="copyMsg"></div>
+              <div style="height:10px"></div>
+              <div class="small muted" id="pvProfit">社内用：原価 ¥4,290 ／ 粗利 ¥3,510（41.2%）</div>
+              <div class="small" style="color:#8FA0AE;margin-top:6px" id="pvUpdated">最終更新：2026/07/06 17:16</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ダッシュボード -->
+      <section id="page-ダッシュボード" class="page">
+        <h3 class="pt">ダッシュボード <span class="badge prep">準備中（画面イメージ）</span></h3>
+        <div class="muted small" style="margin-bottom:14px">見積・受注の状況をひと目で把握する管理画面（ダミーデータ）</div>
+        <div class="kpis" id="kpis"></div>
+        <div class="grid" style="grid-template-columns:2fr 1fr">
+          <div class="card"><h4>月別 見積金額の推移（万円）</h4><div class="bars" id="bars"></div></div>
+          <div class="card"><h4>品目タイプ別の構成比</h4><div class="hbars" id="hbars"></div></div>
+        </div>
+        <div class="grid" style="grid-template-columns:2fr 1fr;margin-top:20px">
+          <div class="card"><h4>直近の見積</h4><div style="overflow-x:auto"><table id="recentTbl"></table></div></div>
+          <div class="card"><h4>アラート・やること</h4><div class="alerts">
+            <div class="alert w">有効期限が3日以内の見積：<b>2件</b></div>
+            <div class="alert i">未送付の下書き：<b>5件</b></div>
+            <div class="alert g">今週の受注：<b>3件</b>（¥268,000）</div>
+          </div></div>
+        </div>
+      </section>
+
+      <!-- 見積履歴 -->
+      <section id="page-見積履歴" class="page">
+        <h3 class="pt">見積履歴 <span class="badge prep">準備中（画面イメージ）</span></h3>
+        <div class="muted small" style="margin-bottom:14px">過去の見積を検索・複製・再出力する一覧（ダミーデータ）</div>
+        <div class="card"><div class="row c3">
+          <label class="f"><div class="lab">期間</div><select disabled><option>今月</option></select></label>
+          <label class="f"><div class="lab">ステータス</div><select disabled><option>すべて</option></select></label>
+          <label class="f"><div class="lab">検索</div><input placeholder="宛先・件名・見積番号" disabled></label>
+        </div><div style="overflow-x:auto"><table id="histTbl"></table></div></div>
+      </section>
+
+      <!-- テンプレート -->
+      <section id="page-テンプレート" class="page">
+        <h3 class="pt">テンプレート <span class="badge prep">準備中（画面イメージ）</span></h3>
+        <div class="muted small" style="margin-bottom:14px">よく使う品目の組み合わせを保存して即見積り（ダミーデータ）</div>
+        <div class="tpl" id="tplBox"></div>
+      </section>
+
+      <!-- 商品マスタ -->
+      <section id="page-商品マスタ" class="page">
+        <h3 class="pt">商品マスタ <span class="badge prep">準備中（画面イメージ）</span></h3>
+        <div class="muted small" style="margin-bottom:14px">品名・標準仕様を登録して入力を省力化</div>
+        <div class="card"><div style="overflow-x:auto"><table id="prodTbl"></table></div></div>
+      </section>
+
+      <!-- 単価マスタ -->
+      <section id="page-単価マスタ" class="page">
+        <h3 class="pt">単価マスタ <span class="badge prep">準備中（画面イメージ）</span></h3>
+        <div class="muted small" style="margin-bottom:14px">見積計算の単価・係数を管理（実データが来たらここを更新＝pricing.py 差し替え）</div>
+        <div class="card"><h4>基本単価マトリクス（円 / 1枚）</h4><div style="overflow-x:auto"><table id="matrixTbl"></table></div></div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:16px">
+          <div class="card"><h4>素材係数</h4><table id="matTbl"></table></div>
+          <div class="card"><h4>加工オプション加算（円/枚）</h4><table id="finTbl"></table></div>
+        </div>
+      </section>
+
+      <!-- 設定 -->
+      <section id="page-設定" class="page">
+        <h3 class="pt">設定 <span class="badge prep">準備中（画面イメージ）</span></h3>
+        <div class="muted small" style="margin-bottom:14px">発行元情報・税率・見積番号などの管理（編集は準備中）</div>
+        <div class="card"><h4>発行元情報（見積書に印字）</h4><div class="row c2">
+          <label class="f"><div class="lab">会社名</div><input value="株式会社シール堂印刷" disabled></label>
+          <label class="f"><div class="lab">電話</div><input value="TEL 03-3493-2131" disabled></label>
+        </div><label class="f"><div class="lab">住所</div><input value="〒141-0031 東京都品川区西五反田4-27-10 印刷産業ビル" disabled></label></div>
+        <div class="card" style="margin-top:16px"><h4>見積の既定値</h4><div class="row c3">
+          <label class="f"><div class="lab">消費税率</div><input value="10 %" disabled></label>
+          <label class="f"><div class="lab">有効期限の既定</div><input value="30 日" disabled></label>
+          <label class="f"><div class="lab">見積番号の形式</div><input value="SD-YYYYMMDD-連番" disabled></label>
+        </div></div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<div id="printDoc"></div>
+
+<script>
+const AREA_BANDS=[["〜10cm²",10],["〜25cm²",25],["〜50cm²",50],["〜100cm²",100],["〜200cm²",200],["200cm²超",Infinity]];
+const QTY_BANDS=[["〜100枚",100],["〜300枚",300],["〜500枚",500],["〜1,000枚",1000],["〜3,000枚",3000],["〜5,000枚",5000],["5,000枚超",Infinity]];
+const BASE_UNIT_PRICE={"〜10cm²":[22,12,8.5,6,4.2,3.4,3],"〜25cm²":[30,16,11,7.8,5.4,4.4,3.9],"〜50cm²":[42,22,15,10.5,7.2,5.9,5.2],"〜100cm²":[60,32,22,15.5,10.6,8.7,7.7],"〜200cm²":[92,50,34,24,16.5,13.6,12],"200cm²超":[140,78,54,38,26.5,22,19.5]};
+const MATERIALS={"上質紙（一般的な紙シール）":1.00,"コート紙（つやのある紙）":1.10,"合成紙ユポ（水に強い）":1.35,"透明PET（透明フィルム）":1.55,"塩ビ（屋外ステッカー向け）":1.70};
+const FINISH_OPTIONS={"ラミネート（グロス／つや有り）":2.5,"ラミネート（マット／つや消し）":2.8,"UVニス（表面保護）":1.8,"箔押し（金・銀などの箔）":6.0,"強粘着（はがれにくい糊）":1.2};
+const CUT_FORMS={"シート（台紙にまとめて）":0,"ロール（機械貼り向け）":1.5,"1枚カット（バラ）":2.0};
+const SHAPES={"四角":false,"角丸":false,"円・楕円":true,"型抜き（フリーカット）":true};
+const DIE_CUT_FEE=8000;
+const LEAD="通常（約7〜10営業日）";
+const MIN_ORDER_PRICE=3000,TAX_RATE=0.10,BASE_COST_RATE=0.55,DIE_CUT_COST_RATE=0.80;
+const MAT_COST_ADJ={"上質紙（一般的な紙シール）":0,"コート紙（つやのある紙）":0.01,"合成紙ユポ（水に強い）":0.03,"透明PET（透明フィルム）":0.05,"塩ビ（屋外ステッカー向け）":0.06};
+const PRODUCTS={"商品ラベル":"seal","化粧品・美容ラベル":"seal","食品表示ラベル":"seal","ステッカー（一般）":"seal","封かん・封緘シール":"seal","ノベルティシール":"seal","バーコード・管理ラベル":"seal","マスキングテープ":"tape","オリジナル紙テープ":"tape"};
+const TAPE_RATE_BY_QTY=[24,19,16,13,11,9.3,8];
+const FINISH_SHORT={"ラミネート（グロス／つや有り）":"ラミ(グロス)","ラミネート（マット／つや消し）":"ラミ(マット)","UVニス（表面保護）":"UVニス","箔押し（金・銀などの箔）":"箔押し","強粘着（はがれにくい糊）":"強粘着"};
+
+let colorType="フルカラー", setupOn=0, finishes=[], items=[];
+
+function bandIndex(v,b){for(let i=0;i<b.length;i++)if(v<=b[i][1])return i;return b.length-1;}
+function bandLabel(v,b){return b[bandIndex(v,b)][0];}
+function areaCm2(sh,w,h){w=Math.max(0,w)/10;h=Math.max(0,h)/10;return sh==="円・楕円"?Math.PI*(w/2)*(h/2):w*h;}
+function colorFactor(ct,n){if(ct==="単色"){n=Math.max(1,n||1);return Math.round((0.9+0.06*(n-1))*1000)/1000;}return 1;}
+function yen(v){return "¥"+Math.round(v).toLocaleString();}
+function val(id){return document.getElementById(id).value;}
+function numv(id){return parseFloat(val(id))||0;}
+
+function estimate(s){
+  const kind=PRODUCTS[s.product]||"seal", qty=parseInt(s.qty)||0, bd=[];
+  const area=areaCm2(s.shape,s.width,s.height);
+  const ok = kind==="tape" ? (qty>0&&s.tapeW>0&&s.tapeL>0) : (qty>0&&area>0);
+  if(!ok) return {valid:false};
+  let unit;
+  if(kind==="tape"){unit=(Math.max(0,s.tapeW)/10)*Math.max(0,s.tapeL)*TAPE_RATE_BY_QTY[bandIndex(qty,QTY_BANDS)];
+    bd.push(["基本単価（テープ 幅×長さ）",s.tapeW+"mm×"+s.tapeL+"m / "+bandLabel(qty,QTY_BANDS),unit]);}
+  else{const al=bandLabel(area,AREA_BANDS);unit=BASE_UNIT_PRICE[al][bandIndex(qty,QTY_BANDS)];
+    bd.push(["基本単価（面積×数量）",al+" / "+bandLabel(qty,QTY_BANDS),unit]);}
+  const mc=MATERIALS[s.material]||1; if(mc!==1){const b=unit;unit*=mc;bd.push(["素材係数",s.material+"（×"+mc+"）",unit-b]);}
+  const cc=colorFactor(s.colorType,s.spot); if(cc!==1){const b=unit;unit*=cc;bd.push(["色味",(s.colorType==="単色"?"単色×"+s.spot+"色":s.colorType)+"（×"+cc+"）",unit-b]);}
+  const fa=(s.finishes||[]).reduce((a,f)=>a+(FINISH_OPTIONS[f]||0),0); if(fa){unit+=fa;bd.push(["加工オプション",s.finishes.join("／"),fa]);}
+  const ca=CUT_FORMS[s.cutForm]||0; if(ca){unit+=ca;bd.push(["仕上げ形態",s.cutForm,ca]);}
+  if(s.setup){unit+=3;bd.push(["セットアップ（内職）","セット・貼り合わせ等",3]);}
+  let sub=unit*qty;
+  const die=(kind==="seal"&&SHAPES[s.shape])?DIE_CUT_FEE:0; if(die){sub+=die;bd.push(["抜き型代（初期費用・1回）",s.shape,die]);}
+  let minAdj=false; if(sub<MIN_ORDER_PRICE){bd.push(["最低料金の調整","最低 "+MIN_ORDER_PRICE.toLocaleString()+"円に引き上げ",MIN_ORDER_PRICE-sub]);sub=MIN_ORDER_PRICE;minAdj=true;}
+  sub=Math.round(sub);
+  const costRate=BASE_COST_RATE+(MAT_COST_ADJ[s.material]||0);
+  const cost=Math.round(Math.max(sub-die,0)*costRate+die*DIE_CUT_COST_RATE);
+  const profit=sub-cost, pr=sub?profit/sub:0, tax=Math.round(sub*TAX_RATE);
+  return {valid:true,kind,qty,unit:sub/qty,subtotal:sub,tax,total:sub+tax,cost,profit,profitRate:pr,breakdown:bd,specText:specText(s,kind)};
+}
+function specText(s,kind){
+  let p=[];
+  if(kind==="tape"){p.push("テープ "+s.tapeW+"mm×"+s.tapeL+"m");p.push(s.material);}
+  else{const sz=s.shape==="円・楕円"?s.width+"×"+s.height+"mm(楕円)":s.width+"×"+s.height+"mm";p.push(s.shape,sz,s.material);}
+  p.push(s.colorType==="単色"?"単色×"+s.spot+"色":"フルカラー");
+  if(kind!=="tape")p.push(s.cutForm);
+  if(s.finishes.length)p.push(s.finishes.join("／"));
+  if(s.setup)p.push("内職あり");
+  return p.filter(Boolean).join(" / ");
+}
+function applyDiscount(list,dt,dv){
+  const subSum=list.reduce((a,i)=>a+i.subtotal,0), costSum=list.reduce((a,i)=>a+i.cost,0);
+  let disc=0; if(dt==="金額（円）")disc=Math.min(Math.max(dv||0,0),subSum); else if(dt==="割合（％）")disc=Math.round(subSum*Math.min(Math.max(dv||0,0),100)/100);
+  const after=subSum-disc, tax=Math.round(after*TAX_RATE), profit=after-costSum;
+  return {subSum,disc,after,tax,total:after+tax,cost:costSum,profit,pr:after?profit/after:0,below:profit<0};
+}
+
+function curSpec(){
+  return {product:val("product"),shape:val("shape"),width:numv("width"),height:numv("height"),
+    tapeW:numv("tapeW"),tapeL:numv("tapeL"),material:val("material"),cutForm:val("cutForm"),
+    colorType,spot:numv("spot"),finishes:finishes.slice(),setup:setupOn,qty:numv("qty"),lead:LEAD};
+}
+function recalc(){
+  const r=estimate(curSpec());
+  const list = items.length?items:(r.valid?[r]:[]);
+  const t = list.length?applyDiscount(list,val("dtype"),numv("dval")):null;
+  document.getElementById("pvQty").textContent = r.valid? r.qty.toLocaleString() : "—";
+  document.getElementById("pvUnit").textContent = r.valid? "¥"+r.unit.toFixed(2) : "—";
+  if(t){
+    document.getElementById("pvSub").textContent=yen(t.subSum);
+    document.getElementById("pvDisc").textContent=t.disc?"－"+yen(t.disc):"¥0";
+    document.getElementById("pvTax").textContent=yen(t.tax);
+    document.getElementById("pvTotal").textContent=yen(t.total);
+    document.getElementById("pvProfit").textContent="社内用：原価 "+yen(t.cost)+" ／ 粗利 "+yen(t.profit)+"（"+(t.pr*100).toFixed(1)+"%）";
+    document.getElementById("pvWarn").innerHTML = t.below?'<div class="alert w" style="margin-top:8px">⚠ 原価割れ（赤字）です。値引きを見直してください。</div>':(t.pr<0.15?'<div class="alert w" style="margin-top:8px">粗利率が15%未満です。</div>':'');
+  } else {
+    ["pvSub","pvDisc","pvTax","pvTotal"].forEach(id=>document.getElementById(id).textContent="—");
+    document.getElementById("pvProfit").textContent="サイズと数量を入力すると計算されます。";
+    document.getElementById("pvWarn").innerHTML="";
+  }
+  renderItems();
+  updateTip();
+}
+function renderItems(){
+  const box=document.getElementById("itemsBox");
+  if(!items.length){box.innerHTML='<div class="muted small">まだ明細がありません。「＋ この品目を明細に追加」で追加できます（1品目だけなら追加せず右の「見積書を作成」でもOK）。</div>';return;}
+  let h='<div style="overflow-x:auto"><table><tr><th>No</th><th>仕様</th><th class="n">数量</th><th class="n">単価</th><th class="n">金額(税抜)</th><th></th></tr>';
+  items.forEach((it,i)=>{h+='<tr><td>'+(i+1)+'</td><td>'+it.specText+'</td><td class="n">'+it.qty.toLocaleString()+'枚</td><td class="n">¥'+it.unit.toFixed(2)+'</td><td class="n">'+yen(it.subtotal)+'</td><td><button class="btn ghost" style="padding:4px 8px" onclick="delItem('+i+')">削除</button></td></tr>';});
+  h+='</table></div>';box.innerHTML=h;
+}
+function addItem(){const r=estimate(curSpec());if(!r.valid){alert("サイズと数量を入力してください。");return;}items.push(r);recalc();}
+function delItem(i){items.splice(i,1);recalc();}
+function newQuote(){items=[];recalc();}
+
+function step(id,d){const e=document.getElementById(id);e.value=Math.max(0,(parseFloat(e.value)||0)+d);recalc();}
+function setColor(c){colorType=c;const s=document.getElementById("segColor");[...s.children].forEach(b=>b.classList.toggle("on",b.textContent===c));document.getElementById("spotWrap").style.display=c==="単色"?"block":"none";recalc();}
+function setSetup(v){setupOn=v;const s=document.getElementById("segSetup");[...s.children].forEach((b,i)=>b.classList.toggle("on",i===v));recalc();}
+function onProduct(){const tape=PRODUCTS[val("product")]==="tape";
+  ["wrapShape","wrapW","wrapH","wrapCut"].forEach(id=>document.getElementById(id).style.display=tape?"none":"block");
+  ["wrapTW","wrapTL"].forEach(id=>document.getElementById(id).style.display=tape?"block":"none");recalc();}
+
+function opt(sel,arr,def){document.getElementById(sel).innerHTML=arr.map(o=>'<option'+(o===def?' selected':'')+'>'+o+'</option>').join("");}
+function initInputs(){
+  opt("product",Object.keys(PRODUCTS),"化粧品・美容ラベル");
+  opt("shape",Object.keys(SHAPES),"四角");
+  opt("material",Object.keys(MATERIALS),"上質紙（一般的な紙シール）");
+  opt("cutForm",Object.keys(CUT_FORMS),"シート（台紙にまとめて）");
+  document.getElementById("finChips").innerHTML=Object.keys(FINISH_OPTIONS).map(f=>'<button data-fin="'+f+'" onclick="toggleFin(this,\''+f+'\')">'+FINISH_SHORT[f]+'</button>').join("");
+  onProduct();
+}
+function toggleFin(btn,f){const i=finishes.indexOf(f);if(i<0){finishes.push(f);btn.classList.add("on");}else{finishes.splice(i,1);btn.classList.remove("on");}recalc();}
+
+// ---- navigation ----
+const NAV=[["ダッシュボード","📊"],["見積作成","📝"],["見積履歴","🕘"],["テンプレート","📄"],["商品マスタ","📦"],["単価マスタ","🏷️"],["設定","⚙️"]];
+function buildNav(){document.getElementById("nav").innerHTML=NAV.map(([n,ic])=>'<button class="'+(n==="見積作成"?"active":"")+'" onclick="go(\''+n+'\',this)">'+ic+'　'+n+'</button>').join("");}
+function go(name,btn){document.querySelectorAll(".page").forEach(p=>p.classList.remove("on"));document.getElementById("page-"+name).classList.add("on");
+  document.querySelectorAll("#nav button").forEach(b=>b.classList.remove("active"));btn.classList.add("active");
+  document.getElementById("topTitle").textContent=name;}
+
+// ---- dashboard & mock data ----
+function dot(s){const c={受注:"#2E7D32",送付済:"#2563EB",下書き:"#9AA6B2",失注:"#C0392B"}[s];return '<span class="dot" style="background:'+c+'"></span>'+s;}
+function buildDash(){
+  const kpi=[["今月の見積件数","42 件","+8 件"],["受注率","38 %","+5pt"],["今月の見積金額","¥3,240,000","+12 %"],["平均粗利率","41.2 %","+1.3pt"]];
+  document.getElementById("kpis").innerHTML=kpi.map(k=>'<div class="card kpi"><div class="lab">'+k[0]+'</div><div class="val">'+k[1]+'</div><div class="d">'+k[2]+'</div></div>').join("");
+  const mon=[["2月",210],["3月",245],["4月",198],["5月",262],["6月",290],["7月",324]],max=Math.max(...mon.map(m=>m[1]));
+  document.getElementById("bars").innerHTML=mon.map(m=>'<div class="b"><div class="vv">'+m[1]+'</div><div class="bar" style="height:'+(m[1]/max*100)+'%"></div><div class="cap">'+m[0]+'</div></div>').join("");
+  const comp=[["シール・ラベル",55],["ステッカー",25],["テープ",12],["その他",8]];
+  document.getElementById("hbars").innerHTML=comp.map(c=>'<div class="hbar"><span>'+c[0]+'</span><div class="track"><div class="fill" style="width:'+c[1]+'%"></div></div><span class="n">'+c[1]+'%</span></div>').join("");
+  const rec=[["SD-20260706-021","株式会社サンプル","商品ラベル印刷",29782,"41%","送付済"],["SD-20260706-020","みどり化粧品","化粧品ラベル",88000,"39%","受注"],["SD-20260705-019","丸和フーズ","食品表示ラベル",46200,"36%","下書き"],["SD-20260705-018","アウトドア山田","屋外ステッカー",132000,"43%","送付済"],["SD-20260704-017","北村商店","封かんシール",12800,"28%","失注"]];
+  document.getElementById("recentTbl").innerHTML='<tr><th>見積番号</th><th>宛先</th><th>件名</th><th class="n">金額(税込)</th><th class="n">粗利率</th><th>状態</th></tr>'+rec.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td><td class="n">'+yen(r[3])+'</td><td class="n">'+r[4]+'</td><td>'+dot(r[5])+'</td></tr>').join("");
+  const hist=rec.concat([["SD-20260703-016","カフェのはな","マスキングテープ",66000,"45%","受注"]]);
+  document.getElementById("histTbl").innerHTML='<tr><th>見積番号</th><th>宛先</th><th>件名</th><th class="n">金額(税込)</th><th class="n">粗利率</th><th>状態</th></tr>'+hist.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td><td class="n">'+yen(r[3])+'</td><td class="n">'+r[4]+'</td><td>'+dot(r[5])+'</td></tr>').join("");
+  const tpl=[["化粧品ラベル 標準","角丸 / 40×60mm / 透明PET / フルカラー / ラミネート"],["食品表示ラベル","四角 / 50×30mm / 上質紙 / 単色×1色 / ロール"],["屋外ステッカー","型抜き / 80×80mm / 塩ビ / フルカラー / UVニス"],["封かんシール","円 / φ30mm / コート紙 / 単色×2色"],["ノベルティ丸シール","円 / φ50mm / 合成紙ユポ / フルカラー"],["オリジナルマスキングテープ","テープ 15mm×5m / 和紙 / フルカラー"]];
+  document.getElementById("tplBox").innerHTML=tpl.map(t=>'<div class="card"><b>'+t[0]+'</b><div class="muted small" style="margin:6px 0 10px">'+t[1]+'</div><button class="btn ghost block" disabled>この内容で作成</button></div>').join("");
+  const prod=[["商品ラベル","シール・ラベル","四角 50×30mm","上質紙","—"],["化粧品・美容ラベル","シール・ラベル","角丸 40×60mm","透明PET","ラミネート"],["食品表示ラベル","シール・ラベル","四角 50×30mm","上質紙","—"],["ステッカー（一般）","シール・ラベル","型抜き 70×70mm","塩ビ","UVニス"],["マスキングテープ","テープ","15mm×5m","和紙","—"],["オリジナル紙テープ","テープ","20mm×10m","上質紙","—"]];
+  document.getElementById("prodTbl").innerHTML='<tr><th>品名</th><th>種類</th><th>標準サイズ</th><th>標準材質</th><th>標準加工</th></tr>'+prod.map(p=>'<tr><td>'+p[0]+'</td><td>'+p[1]+'</td><td>'+p[2]+'</td><td>'+p[3]+'</td><td>'+p[4]+'</td></tr>').join("");
+  // 単価マスタ
+  const ql=QTY_BANDS.map(b=>b[0]);
+  let mh='<tr><th>面積帯</th>'+ql.map(q=>'<th class="n">'+q+'</th>').join("")+'</tr>';
+  Object.keys(BASE_UNIT_PRICE).forEach(a=>{mh+='<tr><td>'+a+'</td>'+BASE_UNIT_PRICE[a].map(v=>'<td class="n">'+v+'</td>').join("")+'</tr>';});
+  document.getElementById("matrixTbl").innerHTML=mh;
+  document.getElementById("matTbl").innerHTML='<tr><th>素材</th><th class="n">係数</th></tr>'+Object.entries(MATERIALS).map(([k,v])=>'<tr><td>'+k+'</td><td class="n">'+v+'</td></tr>').join("");
+  document.getElementById("finTbl").innerHTML='<tr><th>加工</th><th class="n">加算</th></tr>'+Object.entries(FINISH_OPTIONS).map(([k,v])=>'<tr><td>'+k+'</td><td class="n">'+v+'</td></tr>').join("");
+}
+
+// ---- 貼り付け読み取り（パターン照合） ----
+function parseInquiry(text){
+  const f={}, t=(text||"").replace(/，/g,",").replace(/　/g," "), low=t.toLowerCase();
+  const qm=[...t.matchAll(/([\d,]+)\s*[〜~\-ー]?\s*([\d,]*)\s*枚/g)];
+  if(qm.length){let c=[];qm.forEach(m=>[m[1],m[2]].forEach(x=>{const n=parseInt((x||"").replace(/,/g,""));if(n)c.push(n);}));if(c.length)f.qty=Math.max(...c);}
+  const sm=t.match(/(\d+(?:\.\d+)?)\s*(?:mm|㎜|ミリ)?\s*[×xX＊*]\s*(\d+(?:\.\d+)?)/);
+  if(sm){f.width=Math.round(parseFloat(sm[1]));f.height=Math.round(parseFloat(sm[2]));}
+  let tw=t.match(/テープ幅[：:\s]*(\d+(?:\.\d+)?)/)||t.match(/幅[：:\s]*(\d+(?:\.\d+)?)\s*(?:mm|㎜)/);
+  if(tw)f.tapeW=Math.round(parseFloat(tw[1]));
+  let tl=t.match(/(?:テープ)?長さ[：:\s]*(\d+(?:\.\d+)?)\s*m/)||t.match(/(\d+(?:\.\d+)?)\s*m\s*巻/);
+  if(tl)f.tapeL=parseFloat(tl[1]);
+  const mk=[[["上質","普通紙","紙シール"],"上質紙（一般的な紙シール）"],[["コート","アート紙"],"コート紙（つやのある紙）"],[["ユポ","合成紙"],"合成紙ユポ（水に強い）"],[["透明","pet","フィルム","クリア"],"透明PET（透明フィルム）"],[["塩ビ","塩化ビニル","屋外"],"塩ビ（屋外ステッカー向け）"]];
+  for(const [ks,v] of mk){if(ks.some(k=>low.includes(k))){f.material=v;break;}}
+  const pk=[[["マスキング","マステ"],"マスキングテープ"],[["紙テープ","オリジナルテープ"],"オリジナル紙テープ"],[["化粧品","美容","コスメ"],"化粧品・美容ラベル"],[["食品","原材料"],"食品表示ラベル"],[["封かん","封緘"],"封かん・封緘シール"],[["ノベルティ","販促"],"ノベルティシール"],[["バーコード","管理"],"バーコード・管理ラベル"],[["ステッカー"],"ステッカー（一般）"],[["ラベル","シール"],"商品ラベル"]];
+  for(const [ks,v] of pk){if(ks.some(k=>low.includes(k.toLowerCase()))){f.product=v;break;}}
+  const cm=t.match(/単色\s*[×xX*]?\s*(\d+)\s*色/)||t.match(/(\d+)\s*色/);
+  if(/フルカラー/.test(t)||(/カラー/.test(t)&&!/単色/.test(t)))f.colorType="フルカラー";
+  if(/単色|スミ/.test(t)||(cm&&!/フルカラー/.test(t))){f.colorType="単色";f.spot=cm?parseInt(cm[1]):1;}
+  if(/内職|セットアップ/.test(t)){const seg=(t.match(/内職[^。\n]{0,6}/)||[""])[0];f.setup=/(しない|不要|なし)/.test(seg)?0:1;}
+  const fk=[[["グロス","光沢"],"ラミネート（グロス／つや有り）"],[["マット","つや消"],"ラミネート（マット／つや消し）"],[["uvニス","ニス","uv"],"UVニス（表面保護）"],[["箔","ホットスタンプ"],"箔押し（金・銀などの箔）"],[["強粘着","強粘"],"強粘着（はがれにくい糊）"]];
+  const fin=[];for(const [ks,v] of fk){if(ks.some(k=>low.includes(k)))fin.push(v);}
+  if(fin.length)f.finishes=fin;
+  // 宛先（会社名）：ラベル指定を優先。無ければ 株式会社/合同会社 等を含む語を切り出す
+  let comp=(t.match(/(?:会社名|貴社名|御社名|宛先)[：:\s]*(\S[^\n]*)/)||[])[1];
+  if(!comp){
+    let cm=t.match(/((?:株式会社|合同会社|有限会社|合資会社)[^\s、。「」（）：:／\/の]{1,24})/); // 前株
+    if(!cm)cm=t.match(/([^\s、。「」（）：:／\/]{1,24}?(?:株式会社|合同会社|有限会社|合資会社))/); // 後株
+    if(cm)comp=cm[1];
+  }
+  if(comp){comp=comp.trim().replace(/[\s　]*(でございます|です|と申します|と申し上げます|ご?担当.*|様|御中|殿)$/,"").trim();if(comp)f.customer=comp;}
+  // 件名：指定があれば優先、無ければ品名から自動生成
+  let subj=(t.match(/件名[：:\s]*(\S[^\n]*)/)||[])[1];
+  if(subj)f.subject=subj.trim();
+  else if(f.product)f.subject=f.product+"印刷 御見積";
+  // 備考（納期・データ・校正などのヒントを拾う）
+  const remEx=(t.match(/備考[：:\s]*(\S[^\n]*)/)||[])[1];
+  if(remEx){f.remarks=remEx.trim();}
+  else{const rem=[];
+    if(/急ぎ|特急|至急|短納期/.test(t))rem.push("お急ぎ希望");
+    if(/(デザイン|データ|入稿)[^。\n]{0,12}(用意|支給|入稿|あり|できます|できる)/.test(t))rem.push("デザインデータ支給");
+    if(/校正/.test(t))rem.push("色校正あり");
+    if(rem.length)f.remarks=rem.join("／");}
+  return f;
+}
+function applyParsed(f){
+  if(f.product){document.getElementById("product").value=f.product;onProduct();}
+  if(f.width!=null)document.getElementById("width").value=f.width;
+  if(f.height!=null)document.getElementById("height").value=f.height;
+  if(f.tapeW!=null)document.getElementById("tapeW").value=f.tapeW;
+  if(f.tapeL!=null)document.getElementById("tapeL").value=f.tapeL;
+  if(f.material)document.getElementById("material").value=f.material;
+  if(f.colorType)setColor(f.colorType);
+  if(f.spot!=null)document.getElementById("spot").value=f.spot;
+  if(f.setup!=null)setSetup(f.setup);
+  if(f.qty!=null)document.getElementById("qty").value=f.qty;
+  if(f.customer)document.getElementById("cust").value=f.customer;
+  if(f.subject)document.getElementById("subj").value=f.subject;
+  if(f.remarks)document.getElementById("remarks").value=f.remarks;
+  if(f.finishes){finishes=f.finishes.slice();
+    document.querySelectorAll("#finChips button").forEach(b=>b.classList.toggle("on",finishes.includes(b.dataset.fin)));}
+  recalc();
+}
+function doParse(){
+  const f=parseInquiry(document.getElementById("paste").value), n=Object.keys(f).length;
+  applyParsed(f);
+  document.getElementById("parseMsg").textContent = n? ("読み取り："+n+"項目を反映しました（パターン照合）") : "項目を読み取れませんでした。手入力してください。";
+}
+
+// ---- エクスポート（PDF＝印刷 / CSV＝ダウンロード） ----
+function currentList(){const r=estimate(curSpec());return items.length?items:(r.valid?[r]:[]);}
+function quoteNo(){const d=new Date();const p=n=>String(n).padStart(2,"0");return "SD-"+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"-001";}
+function makeQuote(){
+  const list=currentList(); if(!list.length){alert("サイズと数量を入力してください。");return;}
+  const t=applyDiscount(list,val("dtype"),numv("dval"));
+  const logo=document.querySelector(".brand img").src;
+  const d=new Date(), p=n=>String(n).padStart(2,"0");
+  const issue=d.getFullYear()+"年"+p(d.getMonth()+1)+"月"+p(d.getDate())+"日";
+  const vd=new Date(d.getTime()+ (numv("valid")||30)*86400000);
+  const until=vd.getFullYear()+"年"+p(vd.getMonth()+1)+"月"+p(vd.getDate())+"日";
+  const cust=val("cust")||"", subj=val("subj")||"", staff=val("staff")||"", remarks=val("remarks")||"";
+  let rows=list.map((it,i)=>'<tr><td>'+(it.name||"シール・ラベル "+(i+1))+'</td><td style="color:#555">'+it.specText+'</td><td class="r">'+it.qty.toLocaleString()+'枚</td><td class="r">¥'+it.unit.toFixed(2)+'</td><td class="r">'+yen(it.subtotal)+'</td></tr>').join("");
+  const st='padding:7px 8px;border-bottom:1px solid #ccc';
+  document.getElementById("printDoc").innerHTML=
+  '<div style="max-width:720px;margin:0 auto;color:#111;font-family:inherit">'
+  +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+  +'<div style="font-size:26px;font-weight:800;letter-spacing:.15em">御 見 積 書</div>'
+  +'<div style="text-align:right;font-size:12px;line-height:1.7">見積番号：'+quoteNo()+'<br>発行日：'+issue+'<br>有効期限：'+until+'</div></div>'
+  +'<div style="font-size:17px;font-weight:700;border-bottom:2px solid #222;display:inline-block;margin:14px 0 4px;padding-bottom:2px">'+(cust?cust+"　御中":"　御中")+'</div>'
+  +(subj?'<div style="font-size:13px;margin:6px 0">件名：'+subj+'</div>':'')
+  +'<div style="font-size:13px;margin:4px 0 10px">下記の通りお見積り申し上げます。</div>'
+  +'<div style="display:flex;justify-content:space-between;align-items:center;background:#EEF1F4;border:1px solid #ccc;border-radius:6px;padding:8px 12px;margin-bottom:12px">'
+  +'<b>お見積金額（税込）</b><span style="font-size:20px;font-weight:800">'+yen(t.total)+'</span></div>'
+  +'<table style="width:100%;border-collapse:collapse;font-size:13px">'
+  +'<tr style="background:#1F3B57;color:#fff"><th style="'+st+';text-align:left">品名</th><th style="'+st+';text-align:left">仕様</th><th style="'+st+';text-align:right">数量</th><th style="'+st+';text-align:right">単価</th><th style="'+st+';text-align:right">金額</th></tr>'
+  +rows
+  +'<tr><td colspan="3"></td><td class="r" style="'+st+'">小計</td><td class="r" style="'+st+'">'+yen(t.subSum)+'</td></tr>'
+  +(t.disc?'<tr><td colspan="3"></td><td class="r" style="'+st+'">値引き</td><td class="r" style="'+st+'">－'+yen(t.disc)+'</td></tr>':'')
+  +'<tr><td colspan="3"></td><td class="r" style="'+st+'">消費税(10%)</td><td class="r" style="'+st+'">'+yen(t.tax)+'</td></tr>'
+  +'<tr><td colspan="3"></td><td class="r" style="'+st+';font-weight:800">合計(税込)</td><td class="r" style="'+st+';font-weight:800">'+yen(t.total)+'</td></tr>'
+  +'</table>'
+  +'<div style="font-size:12px;color:#555;margin-top:10px;border:1px solid #ddd;border-radius:6px;padding:8px 10px">備考：'+(remarks?remarks+"　":"")+'※本見積書の金額は仮の料金設定に基づく参考値です。</div>'
+  +'<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:22px">'
+  +'<div style="font-size:12px;line-height:1.7"><b style="font-size:14px">株式会社シール堂印刷</b><br>〒141-0031 東京都品川区西五反田4-27-10 印刷産業ビル<br>TEL 03-3493-2131'+(staff?'<br>担当：'+staff:'')+'</div>'
+  +'<img src="'+logo+'" style="width:110px;opacity:.95"></div>'
+  +'<style>#printDoc td.r,#printDoc th.r{text-align:right}</style></div>';
+  window.print();
+}
+function genReplyText(){
+  const list=currentList(); if(!list.length)return "";
+  const t=applyDiscount(list,val("dtype"),numv("dval"));
+  const cust=val("cust"), subj=val("subj"), staff=val("staff"), remarks=val("remarks");
+  const L=[];
+  if(cust)L.push(cust+" 御中");
+  L.push("","お見積りのご回答を申し上げます。","");
+  if(subj)L.push("件名："+subj);
+  L.push("見積番号："+quoteNo(),"");
+  list.forEach((it,i)=>{
+    L.push("■ "+(it.name||"品目"+(i+1)));
+    L.push("　仕様："+it.specText);
+    L.push("　数量："+it.qty.toLocaleString()+"枚 ／ 単価（税抜）：¥"+it.unit.toFixed(2)+" ／ 金額（税抜）："+yen(it.subtotal));
+  });
+  L.push("────────────────");
+  L.push("小計（税抜）："+yen(t.subSum));
+  if(t.disc)L.push("値引き：－"+yen(t.disc));
+  L.push("消費税（10%）："+yen(t.tax));
+  L.push("合計金額（税込）："+yen(t.total));
+  L.push("────────────────","");
+  if(remarks)L.push("備考："+remarks);
+  L.push("※本お見積りは仮の料金設定に基づく概算です。正式なご発注前に最終金額をご確認ください。");
+  L.push("","株式会社シール堂印刷"+(staff?"　"+staff:""),"TEL 03-3493-2131");
+  return L.join("\n");
+}
+function updateTip(){
+  const tip=document.getElementById("replyTip"); if(!tip)return;
+  const txt=genReplyText();
+  tip.textContent = txt || "（サイズと数量を入力すると、ここに回答文が表示されます）";
+}
+function copyReplyText(){
+  const text=genReplyText();
+  if(!text){alert("サイズと数量を入力してください。");return;}
+  const done=()=>{document.getElementById("copyMsg").textContent="コピーしました！メールに貼り付けできます。";};
+  const fallback=()=>{const ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");}catch(e){}ta.remove();done();};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,fallback);}else{fallback();}
+}
+function downloadCSV(){
+  const list=currentList(); if(!list.length){alert("サイズと数量を入力してください。");return;}
+  const t=applyDiscount(list,val("dtype"),numv("dval"));
+  const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+  let r=[["品名","仕様","数量","単価(税抜)","金額(税抜)"].map(q).join(",")];
+  list.forEach((it,i)=>r.push([("シール・ラベル "+(i+1)),it.specText,it.qty,it.unit.toFixed(2),it.subtotal].map(q).join(",")));
+  r.push("");r.push(["","","","小計",t.subSum].map(q).join(","));
+  if(t.disc)r.push(["","","","値引き",-t.disc].map(q).join(","));
+  r.push(["","","","消費税",t.tax].map(q).join(","));
+  r.push(["","","","合計(税込)",t.total].map(q).join(","));
+  const blob=new Blob(["﻿"+r.join("\r\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download="見積明細_"+(val("cust")||"お客様")+".csv";a.click();
+}
+
+buildNav();initInputs();buildDash();recalc();
+</script>
+</body>
+</html>

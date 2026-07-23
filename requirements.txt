@@ -1,0 +1,4 @@
+streamlit>=1.45   # st.logo / st.segmented_control / width="stretch" 等を使用
+openpyxl>=3.1
+anthropic>=0.40   # 貼り付け・注文書PDFのAI読み取り用（APIキーが無ければ使わない）
+pymupdf>=1.24     # 注文書PDFの画像化（読み取り用）
