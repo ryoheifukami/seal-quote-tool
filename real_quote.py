@@ -211,7 +211,12 @@ def render_hiraatsu():
     a = st.columns(4)
     width = a[0].number_input("寸法ヨコ W (mm)", min_value=0.0, value=50.0, step=1.0, key="h_w")
     height = a[1].number_input("寸法タテ P (mm)", min_value=0.0, value=30.0, step=1.0, key="h_h")
-    colors = a[2].number_input("色数 (1〜5)", min_value=1, max_value=5, value=1, step=1, key="h_col")
+    # 平圧は版型・通し工賃の単価表が3色までしか無いため、機種によって色数の上限を切り替える
+    # （間欠のまま5色→平圧に切替、のような操作でも既存の値が上限を超えないよう先にクランプする）
+    max_colors = 5 if st.session_state.get("h_mac", "平圧") == "間欠" else 3
+    if st.session_state.get("h_col", 1) > max_colors:
+        st.session_state["h_col"] = max_colors
+    colors = a[2].number_input(f"色数 (1〜{max_colors})", min_value=1, max_value=max_colors, value=1, step=1, key="h_col")
     machine = _sel("機種", {"平圧": 2, "間欠": 3}, "h_mac")
     b = st.columns(4)
     mw = b[0].number_input("面付ヨコ", min_value=1, value=1, step=1, key="h_mw")
