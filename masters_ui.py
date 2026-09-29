@@ -29,6 +29,14 @@ def _edit_map(title, mapping, k_label, v_label, key):
 
 def render_rates():
     st.markdown("### 単価マスタ")
+    tab_calc, tab_material = st.tabs(["計算定数（Excelの係数）", "原紙・材料 ㎡単価表"])
+    with tab_calc:
+        _render_rate_constants()
+    with tab_material:
+        _render_materials()
+
+
+def _render_rate_constants():
     st.markdown("見積計算に使う**単価・係数・料金表**です。初期値は実際のExcelと同じ。"
                 "編集して保存すると、見積計算に反映されます。")
     rates = masters.get_rates()
@@ -72,6 +80,61 @@ def render_rates():
         masters.reset_rates()
         st.success("初期値に戻しました。")
         st.rerun()
+
+
+def _render_materials():
+    materials = masters.get_materials()
+    st.markdown(f"シール堂様よりご提供いただいた**原紙・材料の仕入単価表**です（{len(materials)}件）。"
+                "見積作成の「原紙 平米単価」は、ここから選ぶと自動入力できます。")
+    suppliers = ["すべて"] + sorted({m.get("supplier", "") for m in materials})
+    c1, c2 = st.columns([1, 2])
+    supplier = c1.selectbox("仕入先で絞り込み", suppliers, key="mat_supplier")
+    keyword = c2.text_input("品名・仕様でキーワード検索", key="mat_keyword",
+                             placeholder="例：ユポ、PET、透明 など")
+
+    filtered = materials
+    if supplier != "すべて":
+        filtered = [m for m in filtered if m.get("supplier") == supplier]
+    if keyword:
+        kw = keyword.lower()
+        filtered = [m for m in filtered if kw in m.get("name", "").lower()]
+    st.caption(f"{len(filtered)}件を表示中")
+
+    rows = [{"仕入先": m.get("supplier", ""), "品名・仕様": m.get("name", ""),
+             "㎡単価(円)": m.get("unit_price", 0)} for m in filtered[:500]]
+    if len(filtered) > 500:
+        st.caption("※ 表示は先頭500件まで。キーワードで絞り込むと見つけやすくなります。")
+    ed = st.data_editor(rows, hide_index=True, width="stretch", key="mat_editor",
+                        disabled=["仕入先", "品名・仕様"],
+                        column_config={"㎡単価(円)": st.column_config.NumberColumn("㎡単価(円)", format="¥%.1f")})
+
+    if st.button("💾 表示中の単価を保存", type="primary", key="mat_save"):
+        edited = {(r["仕入先"], r["品名・仕様"]): r["㎡単価(円)"] for r in ed}
+        for m in materials:
+            k = (m.get("supplier", ""), m.get("name", ""))
+            if k in edited:
+                m["unit_price"] = edited[k]
+        masters.save_materials(materials)
+        st.success("保存しました。以後の見積作成の材料選択に反映されます。")
+    if st.button("初期値（ご提供いただいたリスト）に戻す", key="mat_reset"):
+        masters.reset_materials()
+        st.success("初期値に戻しました。")
+        st.rerun()
+
+
+def material_picker(gt_key, label="原紙マスタから選ぶ（任意）"):
+    """材料マスタから選んで、原紙 平米単価(gt_key)に自動入力する検索セレクト。"""
+    materials = masters.get_materials()
+    options = ["（手入力する）"] + [f"{m.get('supplier','')}｜{m.get('name','')}｜¥{m.get('unit_price',0):.1f}/㎡"
+                                   for m in materials]
+    price_by_label = {opt: m.get("unit_price", 0) for opt, m in zip(options[1:], materials)}
+
+    def _on_pick():
+        sel = st.session_state.get(f"{gt_key}_pick")
+        if sel in price_by_label:
+            st.session_state[gt_key] = float(price_by_label[sel])
+
+    st.selectbox(label, options, key=f"{gt_key}_pick", on_change=_on_pick)
 
 
 def render_products():

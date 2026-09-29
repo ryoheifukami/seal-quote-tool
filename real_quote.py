@@ -17,6 +17,8 @@ import pricing_real as pr
 import pdf_intake
 import intake_parse
 import store
+import masters_ui
+import machine_select
 from quote_excel import ISSUER
 
 
@@ -163,6 +165,34 @@ def _breakdown_table(breakdown):
                      column_config={"原価": st.column_config.NumberColumn(format="¥%d")})
 
 
+def _machine_block(candidates, excluded, haku_candidates, restrict_category=None):
+    """印刷機選定の候補を表示する共通ブロック。restrict_categoryを指定すると、その方式の機種のみに絞る。"""
+    if restrict_category:
+        candidates = [m for m in candidates if m["category"] == restrict_category]
+        excluded = [m for m in excluded if m["category"] == restrict_category]
+    with st.expander("🖨️ 印刷機選定の候補（現在の仕様から自動判定・参考）"):
+        if candidates:
+            for m in candidates:
+                st.markdown(f"**✅ {m['name']}**（{m['category']}）")
+                st.caption(
+                    f"{m['desc']}／色数対応：{m['color_mode']}"
+                    + (f"（{m['max_colors']}色まで）" if m['max_colors'] else "")
+                    + (f"／NG色：{m['ng_color']}" if m.get('ng_color') else "")
+                )
+                st.caption(f"面付目安：{m['menzuke_note']}")
+        else:
+            st.warning("現在の仕様に完全に合う印刷機は見つかりませんでした。下の対象外理由をご確認ください。")
+        if haku_candidates:
+            st.markdown("**🔶 箔押し工程の候補**")
+            for m in haku_candidates:
+                st.markdown(f"- {m['name']}（最大 H{m['max_h']}×W{m['max_w']}mm）")
+        if excluded:
+            with st.expander("対象外の機種と理由"):
+                for m in excluded:
+                    st.caption(f"✕ {m['name']}：" + "／".join(m["exclude_reasons"]))
+        st.caption("※ 最終的な機種判断は担当者の方でご確認ください。")
+
+
 def _cost_block(r):
     c = st.columns(4)
     c[0].metric("原価合計", yen(r["cost_total"]))
@@ -190,8 +220,9 @@ def render_hiraatsu():
     finish = _sel("仕上形状", {"シート": 1, "ロール": 2}, "h_fin")
 
     st.markdown("#### 材料（平米単価）")
+    masters_ui.material_picker("h_gt")
     m = st.columns(3)
-    genshi_tanka = m[0].number_input("原紙 平米単価", min_value=0.0, value=0.0, step=1.0, key="h_gt")
+    genshi_tanka = m[0].number_input("原紙 平米単価", min_value=0.0, step=1.0, key="h_gt")
     pp_tanka = m[1].number_input("PP 平米単価", min_value=0.0, value=0.0, step=1.0, key="h_pt")
     haku_tanka = m[2].number_input("箔 平米単価", min_value=0.0, value=0.0, step=1.0, key="h_ht")
 
@@ -205,6 +236,14 @@ def render_hiraatsu():
     plate_change = o2[0].number_input("版替回数", min_value=0, value=0, step=1, key="h_pc")
     color_change = o2[1].number_input("色替回数", min_value=0, value=0, step=1, key="h_cc")
     add_process = o2[2].number_input("追加工程数", min_value=0, value=0, step=1, key="h_ap")
+
+    cands, excl, haku_cands = machine_select.suggest_machines(
+        colors=int(colors), width=width, height=height,
+        need_half_cut=(nuki == 2), need_full_cut=(nuki == 1),
+        need_emboss=bool(emb), need_back_print=bool(ura), need_variable=bool(numbering),
+        need_haku=(haku_tanka > 0),
+    )
+    _machine_block(cands, excl, haku_cands)
 
     with st.expander("ロール仕上・粗利率・送料・外注原価（詳細）"):
         r1 = st.columns(3)
@@ -271,6 +310,7 @@ def render_masking():
         data_cost = c1[0].number_input("印刷用データ作成", min_value=0, value=3000, step=500, key="m_dc")
         proof = c1[1].number_input("色校正（一律）", min_value=0, value=20000, step=1000, key="m_pf")
         eigyo = c1[2].number_input("営業利益率(%)", 0, 99, 0, key="m_eg")
+        masters_ui.material_picker("m_gt")
         c2 = st.columns(4)
         genshi = c2[0].number_input("原紙 平米単価", min_value=0.0, value=49.0, step=1.0, key="m_gt")
         nen = c2[1].number_input("粘着剤 単価", min_value=0.0, value=7.0, step=0.5, key="m_nen")
@@ -296,6 +336,7 @@ def render_masking():
     c[3].metric("単価（1巻）", f"¥{r['unit']:.2f}")
     with st.expander("原価の内訳を見る"):
         _breakdown_table(r["breakdown"])
+    st.caption("🖨️ 印刷機について：マスキングテープでシームレス印刷やシリアル可変が必要な場合は「PJ」機が想定されます。")
 
     spec = f"マスキングテープ / 幅{int(width)}mm × {maki:g}m巻"
     lines = [("印刷代", r["total"])]
@@ -316,11 +357,18 @@ def render_konica():
     nuki = _sel("抜き", {"ハーフカット": 2, "全抜き": 1}, "k_nuki")
 
     st.markdown("#### 材料（平米単価）・仕上")
+    masters_ui.material_picker("k_gt")
     m = st.columns(4)
-    genshi_tanka = m[0].number_input("原紙 平米単価", min_value=0.0, value=0.0, step=1.0, key="k_gt")
+    genshi_tanka = m[0].number_input("原紙 平米単価", min_value=0.0, step=1.0, key="k_gt")
     pp_tanka = m[1].number_input("PP 平米単価", min_value=0.0, value=0.0, step=1.0, key="k_pt")
     finish = _sel("仕上形状", {"シート": 1, "ロール": 2}, "k_fin")
     slitter_hon = m[3].number_input("スリッター本数", min_value=1, value=1, step=1, key="k_sl")
+
+    cands, excl, _ = machine_select.suggest_machines(
+        colors=4, width=width, height=height, need_half_cut=(nuki == 2), need_full_cut=(nuki == 1),
+    )
+    _machine_block(cands, excl, [], restrict_category="オンデマンド")
+    st.caption("※ コニカミノルタ方式はオンデマンド機（コニカ／PJ）が対象です。シリアル可変・シームレス印刷が必要な場合はPJをご検討ください。")
 
     with st.expander("ロール仕上・粗利率・送料・外注原価（詳細）"):
         r1 = st.columns(4)

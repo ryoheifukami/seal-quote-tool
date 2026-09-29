@@ -14,9 +14,12 @@ import json
 import os
 import copy
 
+import materials_data
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 RATES_PATH = os.path.join(DATA_DIR, "rates.json")
 PRODUCTS_PATH = os.path.join(DATA_DIR, "products.json")
+MATERIALS_PATH = os.path.join(DATA_DIR, "materials.json")
 
 # =====================================================================
 # 単価マスタ（初期値＝実Excelの定数・表）
@@ -160,3 +163,28 @@ def find_product_by_zuban(zuban):
         if p.get("zuban", "").strip().lower() == z:
             return p
     return None
+
+
+# =====================================================================
+# 材料マスタ（原紙・材料の仕入単価表。初期値＝シール堂様ご提供の材料リスト）
+# =====================================================================
+def get_materials():
+    """保存済みの材料マスタ（無ければご提供いただいた材料リストの初期値）。"""
+    try:
+        with open(MATERIALS_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return copy.deepcopy(materials_data.DEFAULT_MATERIALS)
+
+
+def save_materials(materials):
+    _ensure_dir()
+    with open(MATERIALS_PATH, "w", encoding="utf-8") as f:
+        json.dump(materials, f, ensure_ascii=False, indent=2)
+
+
+def reset_materials():
+    try:
+        os.remove(MATERIALS_PATH)
+    except FileNotFoundError:
+        pass
