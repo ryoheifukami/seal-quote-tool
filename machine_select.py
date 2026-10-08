@@ -9,8 +9,23 @@
 """
 
 import copy
+import re
 
 from machines_data import DEFAULT_MACHINES
+
+_TIER_RE = re.compile(r"([\d,]+)枚以上/(\d+)面付")
+
+
+def menzuke_hint(machine, qty):
+    """面付目安（「5,000枚以上/2面付」形式の表記がある機種のみ）。数量に当てはまる面付数を返す。無ければ None。"""
+    tiers = sorted((int(a.replace(",", "")), int(b)) for a, b in _TIER_RE.findall(machine.get("menzuke_note") or ""))
+    if not tiers:
+        return None
+    n = 1
+    for limit, count in tiers:
+        if qty >= limit:
+            n = count
+    return n
 
 
 def _fits(m, colors, width, height, need_half_cut, need_full_cut, need_emboss,

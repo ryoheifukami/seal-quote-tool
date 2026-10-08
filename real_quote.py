@@ -87,7 +87,11 @@ def render_paste_flow():
                  placeholder="例）\nお世話になります。下記で見積りをお願いします。\n"
                              "サイズ：50×30mm／数量：3000枚／単色1色（黒）／透明PET")
     if st.button("読み取り → 仕様に反映", type="primary", key="rq_paste_go"):
-        fields, method_used, notes = intake_parse.parse_inquiry(st.session_state.get("rq_paste", ""), _get_api_key())
+        api_key = _get_api_key()
+        fields, method_used, notes = intake_parse.parse_inquiry(st.session_state.get("rq_paste", ""), api_key)
+        if not api_key:
+            notes = notes + ["AIのキー（ANTHROPIC_API_KEY）が未設定のため、簡易読み取り（パターン照合）を使いました。自然な文章は読み取れないことがあります。"]
+        st.session_state["rq_paste_notes"] = notes
         method, upd, missing = _paste_to_real(fields)
         st.session_state["rq_method"] = method
         for k, v in upd.items():
@@ -98,6 +102,8 @@ def render_paste_flow():
         st.rerun()
     if st.session_state.get("rq_paste_done"):
         st.caption(f"読み取り方式：{st.session_state.get('rq_paste_method_read','')}")
+        for n in st.session_state.get("rq_paste_notes", []):
+            st.caption("・" + n)
         missing = st.session_state.get("rq_paste_missing", [])
         if missing:
             st.warning("⚠ 次の項目が読み取れませんでした。**お客様にご確認ください**：\n\n"
@@ -165,7 +171,7 @@ def _breakdown_table(breakdown):
                      column_config={"原価": st.column_config.NumberColumn(format="¥%d")})
 
 
-def _machine_block(candidates, excluded, haku_candidates, restrict_category=None):
+def _machine_block(candidates, excluded, haku_candidates, restrict_category=None, qty=None):
     """印刷機選定の候補を表示する共通ブロック。restrict_categoryを指定すると、その方式の機種のみに絞る。"""
     if restrict_category:
         candidates = [m for m in candidates if m["category"] == restrict_category]
@@ -179,7 +185,11 @@ def _machine_block(candidates, excluded, haku_candidates, restrict_category=None
                     + (f"（{m['max_colors']}色まで）" if m['max_colors'] else "")
                     + (f"／NG色：{m['ng_color']}" if m.get('ng_color') else "")
                 )
-                st.caption(f"面付目安：{m['menzuke_note']}")
+                hint = machine_select.menzuke_hint(m, qty) if qty else None
+                st.caption(
+                    f"面付目安：{m['menzuke_note']}"
+                    + (f"　→ 数量{qty:,}枚なら **{hint}面付**が目安（ラベルサイズ・仕上がり仕様による）" if hint else "")
+                )
         else:
             st.warning("現在の仕様に完全に合う印刷機は見つかりませんでした。下の対象外理由をご確認ください。")
         if haku_candidates:
@@ -191,6 +201,17 @@ def _machine_block(candidates, excluded, haku_candidates, restrict_category=None
                 for m in excluded:
                     st.caption(f"✕ {m['name']}：" + "／".join(m["exclude_reasons"]))
         st.caption("※ 最終的な機種判断は担当者の方でご確認ください。")
+
+
+def _material_line(width_mm, buy_m, genshi_tanka, genshi_cost, fixed_width=False):
+    """使用する材料の紙幅・長さ・面積・材料代を一行で見せる（新保様の流れ「紙幅とM数→材料代」の確認用）。"""
+    area = width_mm / 1000 * buy_m
+    st.info(
+        f"📏 使用材料：紙幅 **{width_mm:g}mm**{'（固定）' if fixed_width else ''} × 購入 **{buy_m:,.0f}m** "
+        f"＝ {area:,.1f}㎡　→　原紙代 **{yen(genshi_cost)}**（原紙 ㎡単価 ¥{genshi_tanka:g}）"
+    )
+    if not genshi_tanka:
+        st.warning("原紙の㎡単価が未入力のため、材料代が0円になっています。上の「原紙マスタから選ぶ」で材料を選んでください。")
 
 
 def _cost_block(r):
@@ -248,7 +269,7 @@ def render_hiraatsu():
         need_emboss=bool(emb), need_back_print=bool(ura), need_variable=bool(numbering),
         need_haku=(haku_tanka > 0),
     )
-    _machine_block(cands, excl, haku_cands)
+    _machine_block(cands, excl, haku_cands, qty=int(st.session_state.get("h_qty", 1000)))
 
     with st.expander("ロール仕上・粗利率・送料・外注原価（詳細）"):
         r1 = st.columns(3)
@@ -280,6 +301,7 @@ def render_hiraatsu():
     st.markdown("#### 計算結果")
     r0 = pr.estimate_hiraatsu(dict(base, unit_price_manual=None), qty=int(qty))
     _cost_block(r0)
+    _material_line(r0["genshi_w"], r0["buy_m"], genshi_tanka, r0["breakdown"][0][1])
     if st.checkbox("参考単価をそのまま使う", value=True, key="h_useref"):
         unit = round(r0["ref_unit"], 2)
     else:
@@ -372,7 +394,7 @@ def render_konica():
     cands, excl, _ = machine_select.suggest_machines(
         colors=4, width=width, height=height, need_half_cut=(nuki == 2), need_full_cut=(nuki == 1),
     )
-    _machine_block(cands, excl, [], restrict_category="オンデマンド")
+    _machine_block(cands, excl, [], restrict_category="オンデマンド", qty=int(st.session_state.get("k_qty", 1000)))
     st.caption("※ コニカミノルタ方式はオンデマンド機（コニカ／PJ）が対象です。シリアル可変・シームレス印刷が必要な場合はPJをご検討ください。")
 
     with st.expander("ロール仕上・粗利率・送料・外注原価（詳細）"):
@@ -403,6 +425,7 @@ def render_konica():
     st.markdown("#### 計算結果")
     r0 = pr.estimate_konica(dict(base, unit_price_manual=None), qty=int(qty))
     _cost_block(r0)
+    _material_line(pr.KONI_C["genshi_w"] * 10, r0["buy_m"], genshi_tanka, r0["breakdown"][0][1], fixed_width=True)
     if st.checkbox("参考単価をそのまま使う", value=True, key="k_useref"):
         unit = round(r0["ref_unit"], 2)
     else:
